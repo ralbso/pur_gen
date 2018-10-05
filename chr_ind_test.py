@@ -98,9 +98,35 @@ for i, ind in enumerate(PUR_inds):
     else:
         PUR_snps.append(i)
 
-# NEXT STEP:
-# DONE: CREATE ARRAY WITH ALL INDIVIDUALS EXCEPT PUR
-# IF SNPS ARE IN PUR BUT NOT IN THE OTHER ARRAY, IT'S A PUR SNP
+# MEETING COMMENTS (OCT 4):
+# # 0 is usually more frequent than 1
+# # if alternate allele is not present
+# # Take files and eliminate all SNPs with more than 1 alternate allele
+# # For cases where most people are 1|1
+# # Ideas:
+# # # In PUR: sum > 0; in world = 0
+# # # 1) If any genotype has allele > 1; eliminate it
+# # # 2) Eliminate all SNPS where not (see up)
+# # See distribution of all SNPs along the chromosome
+# # One SNP every 100,000 bases
+# # We expect the distance between one SNP and another to be 100,000 bases
+# CELSR1 gene ancestry probably wrong
+#
+# NEXT:
+# # Identify distance between SNPs
+# # Reverse deconvolution of ancestry data
+# # Do our own deconvolution to see if it matches 1000Genomes' deconvolution
+# # # If our model coincides with theirs, confidence is improved
+# # # Should be different from 1000Genomes'
+# Deconvolution Ideas
+# # Eliminate ASW (they're African American; might bias our results)
+# # # ASW was analyzed to calculate AFR AF
+# # Isolate all EUR and AFR SNPs (similar to PUR SNP isolation)
+# # # We expect 1 SNP for every 10,000 bases
+# # # If there are 3 EUR SNPs where there are PUR SNPs, that area might be of EUR origin
+# # # # We should look at the area around the PUR SNPS
+# # # Based only on the unique SNPs for AFR and EUR
+
 
 print("\nThere are "+str(len(PUR_snps))+" SNPs present in PUR, out of "+str(len(af_ind)))
 
