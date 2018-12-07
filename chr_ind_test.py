@@ -1,11 +1,22 @@
-# def amr_snps(vcf_file, chr, thresh):
+# def amr_snps(vcf_file, chrom, thresh):
 
 import os
+import io
+import ast
 import allel
 import os.path
+import itertools
 
 import h5py
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+import time        # to time the program
+import datetime    # to print time at start of program
+print("Time at start:\t"+str(datetime.datetime.now().time()))
+
+start = time.time()
 
 # file source and destination for i/o
 SOURCE_PATH = 'C:'+os.sep+'Users'+os.sep+'rsoto'+os.sep+'Downloads'+os.sep
@@ -20,45 +31,39 @@ CSV_FILE = 'ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.
 
 # if the hdf5 file does not exist yet, start the conversion
 if not os.path.exists(DEST_PATH+HDF_FILE):
+    print("\nHDF file does not exist. Creating one...")
     allel.vcf_to_hdf5(SOURCE_PATH+VCF_FILE, DEST_PATH+HDF_FILE, fields='*', overwrite=True)
-
+    
 # load the data from the hdf5 file
+print("\nLoading HDF file...")
 chr22 = h5py.File(DEST_PATH+HDF_FILE, 'r')
+chrom = 22
 
-snp_id = chr22['variants/ID']
+snp_id = chr22['variants/ID'].value
+z_arr = np.zeros((1, np.size(snp_id)))
+snp_id_cp = np.vstack((snp_id, z_arr))     # add row full of zeros for future bool masking
+
+pos = chr22['variants/POS'].value
 gt = chr22['calldata/GT']
 all_inds = chr22['samples']
 
 # load allele frequencies for each population
-afr_af = np.array(chr22['variants/AFR_AF'], dtype=np.float64)
-amr_af = np.array(chr22['variants/AMR_AF'], dtype=np.float64)
-sas_af = np.array(chr22['variants/SAS_AF'], dtype=np.float64)
-eas_af = np.array(chr22['variants/EAS_AF'], dtype=np.float64)
-eur_af = np.array(chr22['variants/EUR_AF'], dtype=np.float64)
+# afr_af = np.array(chr22['variants/AFR_AF'], dtype=np.float64)
+# amr_af = np.array(chr22['variants/AMR_AF'], dtype=np.float64)
+# sas_af = np.array(chr22['variants/SAS_AF'], dtype=np.float64)
+# eas_af = np.array(chr22['variants/EAS_AF'], dtype=np.float64)
+# eur_af = np.array(chr22['variants/EUR_AF'], dtype=np.float64)
 
 # create empty arrays
-sum_af = np.zeros([np.size(afr_af[:,1]),1], dtype=np.float64)   # sum of AF
-af_ind = np.zeros([np.size(afr_af[:,1]),1], dtype=np.float64)      # retain original indices
+# sum_af = np.zeros([np.size(afr_af[:,1]),1], dtype=np.float64)   # sum of AF
+# af_ind = np.zeros([np.size(afr_af[:,1]),1], dtype=np.float64)      # retain original indices
 
 # concat population arrays, excluding AMR
-no_amr_af = np.concatenate((af_ind, afr_af, sas_af, eas_af, eur_af), axis=1)
+# no_amr_af = np.concatenate((af_ind, afr_af, sas_af, eas_af, eur_af), axis=1)
 
 # set maximum sum of AF threshold
 # if the sum exceeds thresh, we will not consider that SNP
-thresh = 0
-
-# cycle through all SNPs, appending the SNP
-amr_snps = []
-for i, af in enumerate(no_amr_af):
-    if np.all(af == np.isnan):
-        continue
-    elif np.nansum(af) > thresh:
-        no_amr_af[i,:] = np.nan
-    elif np.nansum(af) <= thresh:
-        amr_snps.append(i)
-
-# all_gts = allel.GenotypeArray(gt[amr_snps, 0:1])  # get genotypes for AMR SNPs
-# allel.GenotypeArray(gt[:,0:1])                    # count: 1103547
+# thresh = 0                 # count: 1103547
 
 # read PUR individual list from tsv file (found on 1000Genomes)
 PUR_ids = np.genfromtxt(DEST_PATH+os.sep+"PUR_igsr_samples.tsv", dtype=str, delimiter='\t')[1:,0]
@@ -70,33 +75,106 @@ for i, ind in enumerate(all_inds):
     for j, pur_ind in enumerate(PUR_ids):
         if ind == pur_ind:
             PUR_gt.append(i)
-        else:
-            if i not in ALL_gt:
-                nonPUR_gt.append(i)
-            else:
-                continue
 
-print("\n\nThere are "+str(len(PUR_gt))+" PUR individuals in this dataset")
+for i, ind in enumerate(all_inds):
+    if ind not in PUR_ids:
+        nonPUR_gt.append(i)
+
+# Check whether calculations were correct
+print("There are "+str(len(PUR_gt))+" PUR individuals in this dataset")
+print("There are "+str(len(nonPUR_gt))+" non-PUR individuals in this dataset")
 
 # pull genotypes of Puerto Rican individuals (HGXXXXXX)
+# 3D array: [variants, individuals, genotype]
+print()
+print("Creating genotype arrays...")
 PUR_inds = allel.GenotypeArray(gt[:,PUR_gt])
 nonPUR_inds = allel.GenotypeArray(gt[:,nonPUR_gt])
 
-# eliminate non-AMR genotypes in Puerto Rican individuals
-# PUR_AMR_gts = allel.GenotypeArray(PUR_inds[amr_snps,:])
-
-# iterate over all PUR individuals to eliminate variants not found in PUR
-# WRONG: How do we determine this?
-# Do we go by frequency in a population vs world population?
-# If so, I have to rethink all of this
-# freq = (occurences of a combination)/(# of samples)
-
-PUR_snps = []
-for i, ind in enumerate(PUR_inds):
-    if np.all(PUR_inds[i,:,0] == 0) and np.all(PUR_inds[i,:,1] == 0):
-        continue
+#if not os.path.exists(DEST_PATH+'chr'+str(chrom)+'PUR_SNPs.txt'):
+print()
+print("Creating SNP file")
+print("Analyzing SNPs:")
+tmpPUR_snps = []
+nonPUR_snps = []
+count = 0
+for i, snp in enumerate(snp_id):
+    if count == 10000:
+        print("Analyzing SNP " + str(i))
+        count = 0
+    count += 1
+    if np.any(np.nansum(PUR_inds[i,:,:], axis = 0)) > 0 and np.any(np.nansum(nonPUR_inds[i,:,:], axis = 0)) == 0:
+        tmpPUR_snps.append(tuple([i,snp]))
+        snp_id_cp[1,i] = 1
+    elif np.any(np.nansum(PUR_inds[i,:,:], axis = 0)) < 208 and np.any(np.nansum(nonPUR_inds[i,:,:], axis = 0)) == 2400:
+        tmpPUR_snps.append(tuple([i,snp]))
+        snp_id_cp[1,i] = 1
     else:
-        PUR_snps.append(i)
+        nonPUR_snps.append(tuple([i,snp]))
+    
+tmpPUR_snps = set(tmpPUR_snps)
+nonPUR_snps = set(nonPUR_snps)
+
+print()
+print("Filtering SNPs")
+count = 0
+PUR_snps = []
+for j,prsnp in enumerate(tmpPUR_snps):
+    if count == 1000:
+        print("Filtering SNP "+str(j))
+        count = 0
+    count += 1
+    if prsnp not in nonPUR_snps:
+        PUR_snps.append(prsnp)
+    
+#    with open(DEST_PATH+'chr'+str(chrom)+'PUR_SNPs.txt', 'w') as ff:
+#        ff.write(str(PUR_snps))
+            
+#else:
+#    print()
+#    print("Loading PUR SNPs")
+#    PUR_snps = []
+#    with open(DEST_PATH+'chr'+str(chrom)+'PUR_SNPs.txt', 'r') as ff:
+#        PUR_snps = ast.literal_eval(ff.read())
+    
+print()
+print("PUR SNPs found:\t"+str(len(PUR_snps)))
+print("Which is "+str(round((len(PUR_snps)/len(snp_id)*100), 2))+"% of all SNPs")
+
+idx = [i[0] for i in PUR_snps]
+snp_num = [i[1] for i in PUR_snps]
+
+sorted_PUR_snps = sorted(PUR_snps, key = lambda x: pos[x[0]])
+
+total_dist = max(pos[idx]) - min(pos[idx])
+spatial_binnr = int(total_dist/1686)
+
+snp_binnr = 1103547//100
+
+print()
+print("Plotting putative Puerto Rican SNPs...")
+
+plt.figure()
+count_dist = sns.distplot(pos[idx], bins=spatial_binnr, kde=False, norm_hist=False)
+count_dist.set_title("Raw counts distribution")
+plt.savefig(DEST_PATH+'count_dist_chr22.png')
+
+plt.figure()
+norm_dist = sns.distplot(pos[idx], bins=spatial_binnr, norm_hist=True)
+norm_dist.set_title("Normalized distribution")
+plt.savefig(DEST_PATH+'norm_dist_chr22.png')
+
+plt.figure()
+all_snps_count = sns.distplot(np.where(snp_id_cp[1,:] == 1), bins=spatial_binnr, kde=False, norm_hist=False)
+all_snps_count.set_title("Raw counts distribution of all SNPs")
+plt.savefig(DEST_PATH+'raw_counts_snp_dist_chr22.png')
+
+print()
+print("Time at end:\t"+str(datetime.datetime.now().time()))
+end = time.time()
+print("Elapsed time: "+str(round((end-start)/60,2)))
+print("----")
+print()
 
 # MEETING COMMENTS (OCT 4):
 # # 0 is usually more frequent than 1
@@ -126,8 +204,5 @@ for i, ind in enumerate(PUR_inds):
 # # # If there are 3 EUR SNPs where there are PUR SNPs, that area might be of EUR origin
 # # # # We should look at the area around the PUR SNPS
 # # # Based only on the unique SNPs for AFR and EUR
-
-
-print("\nThere are "+str(len(PUR_snps))+" SNPs present in PUR, out of "+str(len(af_ind)))
 
 chr22.close()
