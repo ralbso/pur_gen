@@ -1,3 +1,39 @@
+def plot_snps(PUR_snps, dest):
+
+    import h5py
+    import numpy as np
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    idx = [i[0] for i in PUR_snps]
+    snp_num = [i[1] for i in PUR_snps]
+
+    sorted_PUR_snps = sorted(PUR_snps, key = lambda x: pos[x[0]])
+
+    total_dist = max(pos[idx]) - min(pos[idx])
+
+    spatial_binnr = int(total_dist/1686)
+
+    snp_binnr = 1103547//100
+
+    print()
+    print("Plotting putative Puerto Rican SNPs...")
+
+    plt.figure()
+    count_dist = sns.distplot(pos[idx], bins=spatial_binnr, kde=False, norm_hist=False)
+    count_dist.set_title("Raw counts distribution")
+    plt.savefig(dest+'count_dist_chr22.png')
+
+    plt.figure()
+    norm_dist = sns.distplot(pos[idx], bins=spatial_binnr, norm_hist=True)
+    norm_dist.set_title("Normalized distribution")
+    plt.savefig(dest+'norm_dist_chr22.png')
+
+    plt.figure()
+    all_snps_count = sns.distplot(np.where(snp_id_cp[1,:] == 1), bins=spatial_binnr, kde=False, norm_hist=False)
+    all_snps_count.set_title("Raw counts distribution of all SNPs")
+    plt.savefig(dest+'raw_counts_snp_dist_chr22.png')
+
 # def amr_snps(vcf_file, chrom, thresh):
 
 import os
@@ -27,13 +63,13 @@ VCF_FILE = 'ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.
 
 # converted file name
 HDF_FILE = 'ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.h5'
-CSV_FILE = 'ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.csv'
+# CSV_FILE = 'ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.csv'
 
 # if the hdf5 file does not exist yet, start the conversion
 if not os.path.exists(DEST_PATH+HDF_FILE):
     print("\nHDF file does not exist. Creating one...")
     allel.vcf_to_hdf5(SOURCE_PATH+VCF_FILE, DEST_PATH+HDF_FILE, fields='*', overwrite=True)
-    
+
 # load the data from the hdf5 file
 print("\nLoading HDF file...")
 chr22 = h5py.File(DEST_PATH+HDF_FILE, 'r')
@@ -67,6 +103,10 @@ all_inds = chr22['samples']
 
 # read PUR individual list from tsv file (found on 1000Genomes)
 PUR_ids = np.genfromtxt(DEST_PATH+os.sep+"PUR_igsr_samples.tsv", dtype=str, delimiter='\t')[1:,0]
+
+if not os.path.exists(DEST_PATH+'chr'+str(chrom)+'_PUR_inds.txt'):
+   with open(DEST_PATH+'chr'+str(chrom)+'_PUR_inds.txt', 'w') as ff:
+       ff.write(str(PUR_ids))
 
 # set up lists of individuals for reference
 nonPUR_gt = []                 # nonPUR
@@ -111,7 +151,7 @@ for i, snp in enumerate(snp_id):
         snp_id_cp[1,i] = 1
     else:
         nonPUR_snps.append(tuple([i,snp]))
-    
+
 tmpPUR_snps = set(tmpPUR_snps)
 nonPUR_snps = set(nonPUR_snps)
 
@@ -126,48 +166,22 @@ for j,prsnp in enumerate(tmpPUR_snps):
     count += 1
     if prsnp not in nonPUR_snps:
         PUR_snps.append(prsnp)
-    
+
 #    with open(DEST_PATH+'chr'+str(chrom)+'PUR_SNPs.txt', 'w') as ff:
 #        ff.write(str(PUR_snps))
-            
+
 #else:
 #    print()
 #    print("Loading PUR SNPs")
 #    PUR_snps = []
 #    with open(DEST_PATH+'chr'+str(chrom)+'PUR_SNPs.txt', 'r') as ff:
 #        PUR_snps = ast.literal_eval(ff.read())
-    
+
 print()
 print("PUR SNPs found:\t"+str(len(PUR_snps)))
 print("Which is "+str(round((len(PUR_snps)/len(snp_id)*100), 2))+"% of all SNPs")
 
-idx = [i[0] for i in PUR_snps]
-snp_num = [i[1] for i in PUR_snps]
-
-sorted_PUR_snps = sorted(PUR_snps, key = lambda x: pos[x[0]])
-
-total_dist = max(pos[idx]) - min(pos[idx])
-spatial_binnr = int(total_dist/1686)
-
-snp_binnr = 1103547//100
-
-print()
-print("Plotting putative Puerto Rican SNPs...")
-
-plt.figure()
-count_dist = sns.distplot(pos[idx], bins=spatial_binnr, kde=False, norm_hist=False)
-count_dist.set_title("Raw counts distribution")
-plt.savefig(DEST_PATH+'count_dist_chr22.png')
-
-plt.figure()
-norm_dist = sns.distplot(pos[idx], bins=spatial_binnr, norm_hist=True)
-norm_dist.set_title("Normalized distribution")
-plt.savefig(DEST_PATH+'norm_dist_chr22.png')
-
-plt.figure()
-all_snps_count = sns.distplot(np.where(snp_id_cp[1,:] == 1), bins=spatial_binnr, kde=False, norm_hist=False)
-all_snps_count.set_title("Raw counts distribution of all SNPs")
-plt.savefig(DEST_PATH+'raw_counts_snp_dist_chr22.png')
+plot_snps(PUR_snps)
 
 print()
 print("Time at end:\t"+str(datetime.datetime.now().time()))
