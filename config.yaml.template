@@ -1,0 +1,7 @@
+# Local settings. Must be adapted for each computer before running scripts.
+---
+  # Source directory of h5 and vcf files
+  source_dir: 'C:\Users\rsoto\Downloads\'
+
+  # Destination directory for any files generated
+  output_dir: 'D:\UPRM\Genomes\'
