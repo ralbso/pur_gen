@@ -1,9 +1,17 @@
-def plot_snps(PUR_snps, dest):
+import os
+import io
+import ast
+import yaml
+import allel
+import os.path
+import itertools
 
-    import h5py
-    import numpy as np
-    import seaborn as sns
-    import matplotlib.pyplot as plt
+import h5py
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+def plot_snps(PUR_snps, dest):
 
     idx = [i[0] for i in PUR_snps]
     snp_num = [i[1] for i in PUR_snps]
@@ -36,27 +44,18 @@ def plot_snps(PUR_snps, dest):
 
 # def amr_snps(vcf_file, chrom, thresh):
 
-import os
-import io
-import ast
-import allel
-import os.path
-import itertools
-
-import h5py
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-
 import time        # to time the program
 import datetime    # to print time at start of program
 print("Time at start:\t"+str(datetime.datetime.now().time()))
 
 start = time.time()
 
+with open('config.yaml', 'r') as f:
+    content = yaml.load(f)
+
 # file source and destination for i/o
-SOURCE_PATH = 'C:'+os.sep+'Users'+os.sep+'rsoto'+os.sep+'Downloads'+os.sep
-DEST_PATH = 'D:'+os.sep+'UPRM'+os.sep+'Genomes'+os.sep
+SOURCE_PATH = content['source_dir']
+DEST_PATH = content['output_dir']
 
 # vcf source file name
 VCF_FILE = 'ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz'
