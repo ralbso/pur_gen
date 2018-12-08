@@ -11,7 +11,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-def plot_snps(PUR_snps, dest):
+def plot_snps(PUR_snps, snp_id_cp, dest):
 
     idx = [i[0] for i in PUR_snps]
     snp_num = [i[1] for i in PUR_snps]
@@ -30,17 +30,17 @@ def plot_snps(PUR_snps, dest):
     plt.figure()
     count_dist = sns.distplot(pos[idx], bins=spatial_binnr, kde=False, norm_hist=False)
     count_dist.set_title("Raw counts distribution")
-    plt.savefig(dest+'count_dist_chr22.png')
+    plt.savefig(dest+'count_dist_chr.png')
 
     plt.figure()
     norm_dist = sns.distplot(pos[idx], bins=spatial_binnr, norm_hist=True)
     norm_dist.set_title("Normalized distribution")
-    plt.savefig(dest+'norm_dist_chr22.png')
+    plt.savefig(dest+'norm_dist_chr.png')
 
     plt.figure()
     all_snps_count = sns.distplot(np.where(snp_id_cp[1,:] == 1), bins=spatial_binnr, kde=False, norm_hist=False)
     all_snps_count.set_title("Raw counts distribution of all SNPs")
-    plt.savefig(dest+'raw_counts_snp_dist_chr22.png')
+    plt.savefig(dest+'raw_counts_snp_dist_chr.png')
 
 # def amr_snps(vcf_file, chrom, thresh):
 
@@ -58,11 +58,11 @@ SOURCE_PATH = content['source_dir']
 DEST_PATH = content['output_dir']
 
 # vcf source file name
-VCF_FILE = 'ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz'
+VCF_FILE = 'ALL.chr.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz'
 
 # converted file name
-HDF_FILE = 'ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.h5'
-# CSV_FILE = 'ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.csv'
+HDF_FILE = 'ALL.chr.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.h5'
+# CSV_FILE = 'ALL.chr.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.csv'
 
 # if the hdf5 file does not exist yet, start the conversion
 if not os.path.exists(DEST_PATH+HDF_FILE):
@@ -71,23 +71,23 @@ if not os.path.exists(DEST_PATH+HDF_FILE):
 
 # load the data from the hdf5 file
 print("\nLoading HDF file...")
-chr22 = h5py.File(DEST_PATH+HDF_FILE, 'r')
+chr = h5py.File(DEST_PATH+HDF_FILE, 'r')
 chrom = 22
 
-snp_id = chr22['variants/ID'].value
+snp_id = chr['variants/ID'].value
 z_arr = np.zeros((1, np.size(snp_id)))
 snp_id_cp = np.vstack((snp_id, z_arr))     # add row full of zeros for future bool masking
 
-pos = chr22['variants/POS'].value
-gt = chr22['calldata/GT']
-all_inds = chr22['samples']
+pos = chr['variants/POS'].value
+gt = chr['calldata/GT']
+all_inds = chr['samples']
 
 # load allele frequencies for each population
-# afr_af = np.array(chr22['variants/AFR_AF'], dtype=np.float64)
-# amr_af = np.array(chr22['variants/AMR_AF'], dtype=np.float64)
-# sas_af = np.array(chr22['variants/SAS_AF'], dtype=np.float64)
-# eas_af = np.array(chr22['variants/EAS_AF'], dtype=np.float64)
-# eur_af = np.array(chr22['variants/EUR_AF'], dtype=np.float64)
+# afr_af = np.array(chr['variants/AFR_AF'], dtype=np.float64)
+# amr_af = np.array(chr['variants/AMR_AF'], dtype=np.float64)
+# sas_af = np.array(chr['variants/SAS_AF'], dtype=np.float64)
+# eas_af = np.array(chr['variants/EAS_AF'], dtype=np.float64)
+# eur_af = np.array(chr['variants/EUR_AF'], dtype=np.float64)
 
 # create empty arrays
 # sum_af = np.zeros([np.size(afr_af[:,1]),1], dtype=np.float64)   # sum of AF
@@ -143,13 +143,16 @@ for i, snp in enumerate(snp_id):
         count = 0
     count += 1
     if np.any(np.nansum(PUR_inds[i,:,:], axis = 0)) > 0 and np.any(np.nansum(nonPUR_inds[i,:,:], axis = 0)) == 0:
-        tmpPUR_snps.append(tuple([i,snp]))
+        # tmpPUR_snps.append(tuple([i,snp]))
+        tmpPUR_snps.append(snp)
         snp_id_cp[1,i] = 1
     elif np.any(np.nansum(PUR_inds[i,:,:], axis = 0)) < 208 and np.any(np.nansum(nonPUR_inds[i,:,:], axis = 0)) == 2400:
-        tmpPUR_snps.append(tuple([i,snp]))
+        # tmpPUR_snps.append(tuple([i,snp]))
+        tmpPUR_snps.append(snp)
         snp_id_cp[1,i] = 1
     else:
-        nonPUR_snps.append(tuple([i,snp]))
+        # nonPUR_snps.append(tuple([i,snp]))
+        nonPUR_snps.append(snp)
 
 tmpPUR_snps = set(tmpPUR_snps)
 nonPUR_snps = set(nonPUR_snps)
@@ -166,8 +169,8 @@ for j,prsnp in enumerate(tmpPUR_snps):
     if prsnp not in nonPUR_snps:
         PUR_snps.append(prsnp)
 
-#    with open(DEST_PATH+'chr'+str(chrom)+'PUR_SNPs.txt', 'w') as ff:
-#        ff.write(str(PUR_snps))
+with open(DEST_PATH+'chr'+str(chrom)+'PUR_SNPs.txt', 'w') as ff:
+   ff.write(str(PUR_snps))
 
 #else:
 #    print()
@@ -218,4 +221,7 @@ print()
 # # # # We should look at the area around the PUR SNPS
 # # # Based only on the unique SNPs for AFR and EUR
 
-chr22.close()
+f.flush()
+f.close()
+ff.close()
+chr.close()
