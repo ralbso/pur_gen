@@ -11,6 +11,9 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+import time        # to time the program
+import datetime    # to print time at start of program
+
 def plot_snps(PUR_snps, snp_id_cp, dest):
 
     idx = [i[0] for i in PUR_snps]
@@ -42,10 +45,7 @@ def plot_snps(PUR_snps, snp_id_cp, dest):
     all_snps_count.set_title("Raw counts distribution of all SNPs")
     plt.savefig(dest+'raw_counts_snp_dist_chr.png')
 
-# def amr_snps(vcf_file, chrom, thresh):
 
-import time        # to time the program
-import datetime    # to print time at start of program
 print("Time at start:\t"+str(datetime.datetime.now().time()))
 
 start = time.time()
@@ -58,10 +58,10 @@ SOURCE_PATH = content['source_dir']
 DEST_PATH = content['output_dir']
 
 # vcf source file name
-VCF_FILE = 'ALL.chr.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz'
+VCF_FILE = 'ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz'
 
 # converted file name
-HDF_FILE = 'ALL.chr.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.h5'
+HDF_FILE = 'ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.h5'
 # CSV_FILE = 'ALL.chr.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.csv'
 
 # if the hdf5 file does not exist yet, start the conversion
@@ -155,7 +155,7 @@ print()
 print("PUR SNPs found:\t"+str(len(PUR_snps)))
 print("Which is "+str(round((len(PUR_snps)/len(snp_id)*100), 2))+"% of all SNPs")
 
-plot_snps(PUR_snps)
+# plot_snps(PUR_snps)
 
 print()
 print("Time at end:\t"+str(datetime.datetime.now().time()))

@@ -6,5 +6,6 @@ def list_inds(chrom):
 
     with open('D:/UPRM/GENOMES/chr'+str(chrom)+'_PUR_inds.txt', 'r') as ff:
        PUR_inds = [line.rstrip('\n') for line in ff]
-
     return(PUR_inds)
+
+list_inds(22)
