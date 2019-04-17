@@ -24,7 +24,7 @@ HDF_FILE = 'PUR.PUR_SNPs.chr22.phase3.20130502.genotypes.recode.h5'
 # if the hdf5 file does not exist yet, start the conversion
 if not os.path.exists(DEST_PATH+HDF_FILE):
     print("\nHDF file does not exist. Creating one...")
-    allel.vcf_to_hdf5(SOURCE_PATH+VCF_FILE, DEST_PATH+HDF_FILE, fields='*', overwrite=True)
+    allel.vcf_to_hdf5(DEST_PATH+VCF_FILE, DEST_PATH+HDF_FILE, fields='*', overwrite=True)
 
 data = h5py.File(DEST_PATH+HDF_FILE, 'r')
 
