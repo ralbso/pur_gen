@@ -18,8 +18,8 @@ with open('config.yaml', 'r') as f:
 SOURCE_PATH = content['source_dir']
 DEST_PATH = content['output_dir']
 
-VCF_FILE = 'PUR.chr22.phase3.20130502.genotypes.recode.vcf'
-HDF_FILE = 'PUR.chr22.phase3.20130502.genotypes.recode.h5'
+VCF_FILE = 'PUR.PUR_SNPs.chr22.phase3.20130502.genotypes.recode.vcf'
+HDF_FILE = 'PUR.PUR_SNPs.chr22.phase3.20130502.genotypes.recode.h5'
 
 # if the hdf5 file does not exist yet, start the conversion
 if not os.path.exists(DEST_PATH+HDF_FILE):
@@ -30,5 +30,3 @@ data = h5py.File(DEST_PATH+HDF_FILE, 'r')
 
 snp_id = data['variants/ID'].value
 pos = data['variants/POS'].value
-
-print(pos[:20])
