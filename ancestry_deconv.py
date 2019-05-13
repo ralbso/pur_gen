@@ -45,5 +45,12 @@ pos_all = all_snps['variants/POS'].value
 snp_id_pur = pur_snps['variants/ID'].value
 pos_pur = pur_snps['variants/POS'].value
 
-snp_mask = ma.masked_where(snp_id_all == snp_id_pur, snp_id_all, copy=True)
+snp_mask = np.in1d(snp_id_all, snp_id_pur, assume_unique=True)
+print("ALL")
+print(snp_id_all[:10])
+print()
+print("PUR")
+print(snp_id_pur[:10])
+print()
+print("Mask")
 print(snp_mask[:10])
