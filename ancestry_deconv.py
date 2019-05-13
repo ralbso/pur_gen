@@ -8,6 +8,7 @@ import itertools
 
 import h5py
 import numpy as np
+import numpy.ma as ma
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -20,20 +21,19 @@ chrom = 22
 SOURCE_PATH = content['source_dir']
 DEST_PATH = content['output_dir']
 
-VCF_ALL_SNPS = 'PUR.chr22.phase3.20130502.genotypes.recode.vcf'
 HDF_ALL_SNPS = 'PUR.chr22.phase3.20130502.genotypes.recode.h5'
-
-VCF_PUR_SNPS = 'PUR.PUR_SNPs.chr22.phase3.20130502.genotypes.recode.vcf'
 HDF_PUR_SNPS = 'PUR.PUR_SNPs.chr22.phase3.20130502.genotypes.recode.h5'
 
 # if the hdf5 file does not exist yet, start the conversion
 if not os.path.exists(DEST_PATH+HDF_ALL_SNPS):
     print("\nHDF file does not exist. Creating one...")
+    VCF_ALL_SNPS = 'PUR.chr22.phase3.20130502.genotypes.recode.vcf'
     allel.vcf_to_hdf5(DEST_PATH+VCF_ALL_SNPS, DEST_PATH+HDF_ALL_SNPS, fields='*', overwrite=True)
 
 # if the hdf5 file does not exist yet, start the conversion
 if not os.path.exists(DEST_PATH+HDF_PUR_SNPS):
     print("\nHDF file does not exist. Creating one...")
+    VCF_PUR_SNPS = 'PUR.PUR_SNPs.chr22.phase3.20130502.genotypes.recode.vcf'
     allel.vcf_to_hdf5(DEST_PATH+VCF_PUR_SNPS, DEST_PATH+HDF_PUR_SNPS, fields='*', overwrite=True)
 
 all_snps = h5py.File(DEST_PATH+HDF_ALL_SNPS, 'r')
@@ -45,5 +45,5 @@ pos_all = all_snps['variants/POS'].value
 snp_id_pur = pur_snps['variants/ID'].value
 pos_pur = pur_snps['variants/POS'].value
 
-snp_mask = snp_id_all == snp_id_pur
-print(snp_id_all[snp_mask])
+snp_mask = ma.masked_where(snp_id_all == snp_id_pur, snp_id_all, copy=True)
+print(snp_mask[:10])
