@@ -83,7 +83,8 @@ gt = chr['calldata/GT']
 all_inds = chr['samples']
 
 # read PUR individual list from tsv file (found on 1000Genomes)
-PUR_ids = np.genfromtxt(DEST_PATH+os.sep+"PUR_igsr_samples.tsv", dtype=str, delimiter='\t')[1:,0]
+# PUR_ids = np.genfromtxt(DEST_PATH+os.sep+"PUR_igsr_samples.tsv", dtype=str, delimiter='\t')[1:,0]
+PUR_ids = np.genfromtxt(SOURCE_PATH+os.sep+"chr22_PUR_inds.txt", dtype=str, delimiter="\n")
 
 if not os.path.exists(DEST_PATH+'chr'+str(chrom)+'_PUR_inds.txt'):
    with open(DEST_PATH+'chr'+str(chrom)+'_PUR_inds.txt', 'w') as ff:

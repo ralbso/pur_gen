@@ -39,18 +39,27 @@ if not os.path.exists(DEST_PATH+HDF_PUR_SNPS):
 all_snps = h5py.File(DEST_PATH+HDF_ALL_SNPS, 'r')
 pur_snps = h5py.File(DEST_PATH+HDF_PUR_SNPS, 'r')
 
-snp_id_all = all_snps['variants/ID'].value
-pos_all = all_snps['variants/POS'].value
+snp_id_all = all_snps['variants/ID']
+pos_all = all_snps['variants/POS']
 
-snp_id_pur = pur_snps['variants/ID'].value
-pos_pur = pur_snps['variants/POS'].value
+snp_id_pur = pur_snps['variants/ID']
+pos_pur = pur_snps['variants/POS']
 
-snp_mask = np.in1d(snp_id_all, snp_id_pur, assume_unique=True)
-print("ALL")
-print(snp_id_all[:10])
+snp_mask = ma.array(np.in1d(snp_id_all, snp_id_pur, assume_unique=True))
+
+idx = ma.nonzero(snp_mask)
+start = 0
+end = 0
+for i,ii in enumerate(idx):
+    start = int(idx[0][i])-100
+    end = int(idx[0][i])+100
+    snp_mask[start:end] = ma.masked
+
+print(snp_mask[150:250])
+
+print(idx[0][:50])
+
 print()
-print("PUR")
-print(snp_id_pur[:10])
+print(snp_mask[idx[0][:50]])
 print()
-print("Mask")
-print(snp_mask[:10])
+print(pos_all[snp_mask][:50])
